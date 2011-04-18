@@ -1,8 +1,6 @@
 package sandbox.neo4j;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Scanner;
+import java.io.*;;
 import java.util.Vector;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -15,11 +13,13 @@ public class ReadGDF {
     private static Pattern csvRE;
 
     protected int nb_lines = 0;
-    protected Scanner scanner;
-    Hashtable nodes;
-    Vector nodes_order;
-    Hashtable edges;
-    Vector edges_order;
+    protected BufferedReader reader;
+    protected Boolean has_next_line;
+
+    protected Hashtable nodes;
+    protected Vector nodes_order;
+    protected Hashtable edges;
+    protected Vector edges_order;
 
     ReadGDF( String file ) {
         csvRE = Pattern.compile(CSV_PATTERN);
@@ -31,7 +31,8 @@ public class ReadGDF {
         try {
             File source = new File( file );
             if( source.isFile() && source.getAbsolutePath().endsWith(".gdf") ) {
-                scanner = new Scanner(source);
+                reader = new BufferedReader( new FileReader( file ) );
+                has_next_line = true;
             } else {
                 throw new IOException( "File '" + file + "' must be a .gdf file." );
             }
@@ -42,33 +43,31 @@ public class ReadGDF {
     }
 
     public Boolean hasNextLine() {
-        return scanner.hasNextLine();
+        return has_next_line;
     }
 
     protected Vector getLine() {
         Vector fields = new Vector( 25, 25 );
-        String line = scanner.nextLine();
-        nb_lines++;
-
-        Matcher m = csvRE.matcher(line);
-        while (m.find()) {
-            String match = m.group();
-            if (match == null) {
-                break;
-            }
-            if (match.endsWith(",")) { // trim trailing ,
-                match = match.substring(0, match.length() - 1);
-            }
-            if (match.startsWith("\"")) {
-                if(!match.endsWith("\"")){
-                    System.err.println( "quotation error line " + nb_lines );
+        String cur_line;
+        try {
+            has_next_line = ((cur_line = reader.readLine()) != null );
+        } catch( IOException e ) {
+           System.err.println("Error line " + nb_lines + ": " + e); 
+           cur_line = "";
+        } 
+        if( has_next_line ) {
+            nb_lines++;
+            String [] split = cur_line.split(",");
+            for( int i = 0; i < split.length; i++ ) { 
+                 
+                if ( split[i].startsWith("\"") && split[i].endsWith( "\"" ) ) {
+                    split[i] = split[i].substring(1, split[i].length() - 1);
                 }
-                match = match.substring(1, match.length() - 1);
+                if (split[i].length() == 0) {
+                    split[i] = null;
+                }
+                fields.add(split[i]);
             }
-            if (match.length() == 0) {
-                match = null;
-            }
-            fields.add(match);
         }
         return fields;
     }
@@ -129,20 +128,27 @@ public class ReadGDF {
             String val = (String) line.get( i );
             String key = (String) order.get( i );
             String type = (String) types.get( key );
-            Object o;
-            if( type.equals( "INT" ) ) {
-                o = Integer.parseInt( val );
-            } else if( type.equals( "DOUBLE" ) ) {
-                o = Double.parseDouble( val );
-            } else if( type.equals( "BOOLEAN" ) ) {
-                o = Boolean.parseBoolean( val );
-            } else if( type.equals( "VARCHAR" ) ) {
-                o = val;
-            } else {
-                System.err.println("unknown type: " + type );
-                o = val;
+            Object o = null;
+            try {
+                if( type.equals( "INT" ) ) {
+                    o = Integer.parseInt( val );
+                } else if( type.equals( "DOUBLE" ) ) {
+                    o = Double.parseDouble( val );
+                } else if( type.equals( "BOOLEAN" ) ) {
+                    o = Boolean.parseBoolean( val );
+                } else if( type.equals( "VARCHAR" ) ) {
+                    o = val;
+                } else {
+                    System.err.println("unknown type: " + type );
+                    o = val;
+                }
+            } catch ( Exception e ) {
+                System.err.println( "Wrong type at line " + nb_lines + ": field=" + key + " type=" + type + " value=" + val );
+            } finally {
+                if( o != null ) {
+                    fields.put( key, o );
+                }
             }
-            fields.put( key, o );
         }
     }
 

@@ -13,8 +13,13 @@ public class NeoTest {
     }
  
     public static void main(String[] args) {
-        GraphDatabaseService graphDb = new EmbeddedGraphDatabase("var/base");
- 
+        
+        String base = "var/base";
+        if( args.length > 0 ) {
+            base = args[0];
+        }
+
+        GraphDatabaseService graphDb = new EmbeddedGraphDatabase( base );
  
         Transaction tx = graphDb.beginTx();
         try {
@@ -29,7 +34,7 @@ public class NeoTest {
  
             System.out.print(firstNode.getProperty("message"));
             System.out.print(relationship.getProperty("message"));
-            System.out.print(secondNode.getProperty("message"));
+            System.out.println(secondNode.getProperty("message"));
         }
         finally {
             tx.finish();
