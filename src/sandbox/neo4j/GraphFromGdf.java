@@ -98,23 +98,6 @@ public class GraphFromGdf {
             }
             
              GraphDatabaseService graph = loadGDF( gdfFile, base );
-
-             //Iterator<Node> it = graph.getAllNodes().iterator();
-             //it.next(); // skip root node
-             //while( it.hasNext() ) {
-                //Node node = it.next();
-                //System.out.print( node.getId() );
-                //System.out.print( " url: " + node.getProperty( "url" ) );
-                //System.out.print( "\n" );
-
-                //Iterator<Relationship> rel = node.getRelationships().iterator();
-                //if( rel.hasNext() ) {
-                    //System.out.println( "   Relationships:" );     
-                //}
-                //while( rel.hasNext() ) {
-                    //System.out.println( "  - " + rel.next().getEndNode().getId() );
-                //}
-             //}
              graph.shutdown();
         }
     }
